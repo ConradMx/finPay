@@ -1,18 +1,19 @@
-import React, { ReactNode, RefObject } from 'react';
+import React, { ReactNode } from 'react';
 import { Dimensions, StyleSheet } from 'react-native';
-import Animated, {
-  useAnimatedGestureHandler,
-  useAnimatedStyle,
-  useAnimatedReaction,
-  withSpring,
-  scrollTo,
-  withTiming,
-  useSharedValue,
-  runOnJS,
-  SharedValue,
-  AnimatedRef,
-} from 'react-native-reanimated';
 import { PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
+import Animated, {
+  AnimatedRef,
+  runOnJS,
+  scrollTo,
+  SharedValue,
+  useAnimatedGestureHandler,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { animationConfig, COL, getOrder, getPosition, Positions, SIZE } from './Config';
@@ -30,22 +31,25 @@ interface ItemProps {
 const Item = ({ children, positions, id, onDragEnd, scrollView, scrollY, editing }: ItemProps) => {
   const inset = useSafeAreaInsets();
   const containerHeight = Dimensions.get('window').height - inset.top - inset.bottom;
-  const contentHeight = (Object.keys(positions.value).length / COL) * SIZE;
   const isGestureActive = useSharedValue(false);
 
-  const position = getPosition(positions.value[id]!);
-  const translateX = useSharedValue(position.x);
-  const translateY = useSharedValue(position.y);
+  // Use derived values for contentHeight and position
+  const contentHeight = useDerivedValue(() => (Object.keys(positions.value).length / COL) * SIZE);
+  const position = useDerivedValue(() => getPosition(positions.value[id]!));
 
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+
+  // Set initial translate values when position changes
   useAnimatedReaction(
-    () => positions.value[id]!,
-    (newOrder) => {
-      if (!isGestureActive.value) {
-        const pos = getPosition(newOrder);
-        translateX.value = withTiming(pos.x, animationConfig);
-        translateY.value = withTiming(pos.y, animationConfig);
+    () => position.value,
+    (pos, prev) => {
+      if (pos && (!prev || pos.x !== prev.x || pos.y !== prev.y)) {
+        translateX.value = pos.x;
+        translateY.value = pos.y;
       }
-    }
+    },
+    [id]
   );
 
   const onGestureEvent = useAnimatedGestureHandler<
@@ -91,7 +95,7 @@ const Item = ({ children, positions, id, onDragEnd, scrollView, scrollY, editing
         // 3. Scroll up and down if necessary
         const lowerBound = scrollY.value;
         const upperBound = lowerBound + containerHeight - SIZE;
-        const maxScroll = contentHeight - containerHeight;
+        const maxScroll = contentHeight.value - containerHeight;
         const leftToScrollDown = maxScroll - scrollY.value;
         if (translateY.value < lowerBound) {
           const diff = Math.min(lowerBound - translateY.value, lowerBound);
@@ -140,4 +144,4 @@ const Item = ({ children, positions, id, onDragEnd, scrollView, scrollY, editing
   );
 };
 
-export default Item; 
+export default Item;
