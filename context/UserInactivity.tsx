@@ -19,7 +19,7 @@ export const UserInactivityProvider = ({ children }: Props) => {
   const recordStartTime = async () => {
     try {
       await SecureStore.setItemAsync("startTime", Date.now().toString());
-      console.log("🕒 startTime recorded");
+      console.log(" startTime recorded");
     } catch (error) {
       console.error("Error saving startTime", error);
     }
@@ -38,10 +38,10 @@ export const UserInactivityProvider = ({ children }: Props) => {
       try {
         const savedTime = await SecureStore.getItemAsync("startTime");
         const elapsed = Date.now() - (savedTime ? parseInt(savedTime) : 0);
-        console.log("⏱️ Elapsed:", elapsed, "ms");
+        console.log(" Elapsed:", elapsed, "ms");
 
         if (elapsed > 3000 && isSignedIn) {
-          console.log("🔒 Redirecting to lock screen...");
+          console.log(" Redirecting to lock screen...");
           router.replace("/(authenticated)/(modals)/lock");
         }
       } catch (err) {

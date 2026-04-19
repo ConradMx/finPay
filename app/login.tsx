@@ -1,170 +1,119 @@
-import { View,
-     Text, 
-     StyleSheet,
-     TextInput, 
-     TouchableOpacity,
-      KeyboardAvoidingView,
-       Platform, 
-       Alert} 
-       from 'react-native'
-import React, { useState } from 'react'
-import { defaultStyles } from '@/constants/Styles'
 import Colors from '@/constants/Colors'
-import { Link, router } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import { defaultStyles } from '@/constants/Styles'
 import { isClerkAPIResponseError, useSignIn } from '@clerk/clerk-expo'
-
-enum SignInType {
-  Phone,
-  Email,
-  Google,
-  Apple,
-}
-
+import { Link, useRouter } from 'expo-router'
+import React, { useState } from 'react'
+import { Alert, KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 
 const login = () => {
-const [countryCode, setCountryCode] = useState  ('+1')
-const [phoneNumber, setPhoneNumber] = useState ('')
-const keyboardVerticalOffset= Platform.OS === 'ios' ? 80 : 0; 
-const {signIn} = useSignIn();
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const { signIn } = useSignIn()
+  const router = useRouter()
 
-const onSignIn = async (type: SignInType) => {
-  if (type === SignInType.Phone) {
+  const validatePassword = (pwd: string) => {
+    // Minimum 8 characters
+    return pwd.length >= 8
+  }
 
-try {
-  const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+  const onSignIn = async () => {
+    // Validate password meets minimum requirements
+    if (!validatePassword(password)) {
+      Alert.alert('Invalid Password', 'Password must be at least 8 characters.')
+      return
+    }
 
-  const {supportedFirstFactors} = await signIn!.create ({
-identifier: fullPhoneNumber,
-  }) ;
-  if (!supportedFirstFactors) {
-        throw new Error('No supported first factors found');
+    try {
+      const signInAny = signIn as any
+      // Create sign-in session with credentials
+      const result = await signInAny.create({
+        identifier: email.trim(),
+        password,
+      })
+
+      // Prepare email verification
+      await signInAny.prepareFirstFactor({
+        strategy: 'email_code',
+      })
+
+      // Navigate to OTP verification
+      router.push({ pathname: '/verify/[identifier]', params: { identifier: email.trim(), signin: 'true' } })
+    } catch (err: any) {
+      console.log('error', JSON.stringify(err, null, 2))
+      if (isClerkAPIResponseError(err)) {
+        const errorMsg = err.errors[0].message
+        if (errorMsg?.includes('email_address is not a valid parameter')) {
+          Alert.alert(
+            'Email Authentication Not Enabled',
+            'Please enable email authentication in your Clerk Dashboard at https://dashboard.clerk.com under User Authentication → Email, Phone, Username.'
+          )
+        } else {
+          Alert.alert('Error', errorMsg)
+        }
+      } else {
+        Alert.alert('Error', 'Unable to sign in. Please check your credentials.')
       }
-  const firstPhoneFactor: any = supportedFirstFactors.find ((factor: any) => {
-return factor.strategy === 'phone_code';
-  });
-const {phoneNumberId}= firstPhoneFactor;
-
-await signIn!.prepareFirstFactor ({
-  strategy:'phone_code',
-  phoneNumberId,
-});
-router.push ({pathname: '/verify/[phone]', params: {phone: fullPhoneNumber, signin: 'true'} });
-
-} catch (err) {
-  console.log('error', JSON.stringify(err, null, 2));
-  if (isClerkAPIResponseError(err)) {
-if (err.errors[0].code === 'form_identifier_not_found')
-  Alert.alert('Error', err.errors[0].message)
+    }
   }
-}
 
-  }
-};
+  const isFormValid = email.trim() !== '' && password !== ''
 
-  return ( 
-    <KeyboardAvoidingView style={{flex:1}} behavior='padding' keyboardVerticalOffset={73}>
-    <View style={defaultStyles.container}>
-      <Text style={defaultStyles.header}>Welcome back</Text>
-      <Text style={defaultStyles.descriptionText}>Enter your phone number associated with your account</Text>
-      <View style={styles.inputContainer}>
-   <TextInput
-        style={styles.input}
-        placeholder="Country code"
-        placeholderTextColor={Colors.gray}
-        value={countryCode} 
-        />
- 
+  return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior='padding' keyboardVerticalOffset={73}>
+      <View style={defaultStyles.container}>
+        <Text style={defaultStyles.header}>Welcome back</Text>
+        <Text style={defaultStyles.descriptionText}>Enter the email and password for your account.</Text>
+
         <TextInput
-        style={[styles.input, {flex:1}]}
-        placeholder="Mobile number"
-        keyboardType="numeric"
-        placeholderTextColor={Colors.gray}
-        value={phoneNumber}
-        onChangeText={setPhoneNumber}
-     
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor={Colors.gray}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
         />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor={Colors.gray}
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+
+        <TouchableOpacity
+          style={[defaultStyles.pillButton, isFormValid ? styles.enabled : styles.disabled, { marginBottom: 20 }]}
+          onPress={onSignIn}
+          disabled={!isFormValid}
+        >
+          <Text style={defaultStyles.buttonText}>Continue</Text>
+        </TouchableOpacity>
+
+        <Link href={'/signup'} replace asChild>
+          <TouchableOpacity>
+            <Text style={defaultStyles.textLink}>Don’t have an account? Sign up</Text>
+          </TouchableOpacity>
+        </Link>
       </View>
-   
-
-
-
-<TouchableOpacity style={[defaultStyles.pillButton, 
-    phoneNumber !=='' ? styles.enabled : styles.disabled, 
-    { marginBottom:20}, 
-     ]}
-      onPress={() => onSignIn (SignInType.Phone)}>
-        <Text style={defaultStyles.buttonText}>Continue</Text>
-</TouchableOpacity>
-
-<View style={{flexDirection:'row', alignItems:'center', gap:16}}>
-    <View style={{flex:1, height:StyleSheet.hairlineWidth, backgroundColor:Colors.gray}}>
-    </View>
-    
-<Text style={{color: Colors.gray, fontSize:20}}>or</Text>
-
-    <View style={{flex:1, height:StyleSheet.hairlineWidth, backgroundColor:Colors.gray}}>
-
-    </View>
-
-</View>
-<TouchableOpacity
-onPress = {() => onSignIn(SignInType.Email)}
-style={[defaultStyles.pillButton, {gap:16, 
-  flexDirection:'row',
-  backgroundColor:'#fff',
-    marginTop:20
-  }]}>
-<Ionicons name='mail' size={24} color={'#000'}/>
-<Text style={[defaultStyles.buttonText, {color: "#000"} ]}>Continue with email</Text>
-</TouchableOpacity>
-
-<TouchableOpacity
-onPress = {() => onSignIn(SignInType.Google)}
-style={[defaultStyles.pillButton, {gap:16, 
-  flexDirection:'row',
-  backgroundColor:'#fff',
-    marginTop:20
-  }]}>
-<Ionicons name='logo-google' size={24} color={'#000'}/>
-<Text style={[defaultStyles.buttonText, {color: "#000"} ]}>Continue with email</Text>
-</TouchableOpacity>
-
-
-<TouchableOpacity
-onPress = {() => onSignIn(SignInType.Apple)}
-style={[defaultStyles.pillButton, {gap:16, 
-  flexDirection:'row',
-  backgroundColor:'#fff',
-  marginTop:20
-  }]}>
-<Ionicons name='logo-apple' size={24} color={'#000'}/>
-<Text style={[defaultStyles.buttonText, {color: "#000"} ]}>Continue with email</Text>
-</TouchableOpacity>
-    </View>
     </KeyboardAvoidingView>
   )
 }
 
-
 const styles = StyleSheet.create({
-inputContainer:{
-    marginVertical:40,
-    flexDirection:"row",    
-},
-input:{
-backgroundColor: Colors. lightGray,
-padding:20,
-borderRadius:16,
-fontSize:20,
-marginRight:10
-},
-enabled:{
-backgroundColor: Colors.primary
-},
-disabled:{
-backgroundColor:Colors.primaryMuted,
-},
-    
+  input: {
+    backgroundColor: Colors.lightGray,
+    padding: 20,
+    borderRadius: 16,
+    fontSize: 20,
+    marginBottom: 16,
+  },
+  enabled: {
+    backgroundColor: Colors.primary,
+  },
+  disabled: {
+    backgroundColor: Colors.primaryMuted,
+  },
 })
 export default login

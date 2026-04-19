@@ -31,7 +31,7 @@ const CustomHeader = () => {
               justifyContent: 'center',
               alignItems: 'center',
             }}>
-            <Text style={{ color: '#fff', fontWeight: '500', fontSize: 16 }}>SG</Text>
+            <Text style={{ color: '#fff', fontWeight: '500', fontSize: 16 }}>AW</Text>
           </TouchableOpacity>
         </Link>
         <View style={styles.searchSection}>
@@ -39,11 +39,19 @@ const CustomHeader = () => {
           <TextInput style={styles.input} placeholder="Search" placeholderTextColor={Colors.dark} />
         </View>
         <View style={styles.circle}>
-          <Ionicons name={'stats-chart'} size={20} color={Colors.dark} />
+          <Ionicons name={'stats-chart'} size={20} color={Colors.dark}/>
         </View>
-        <View style={styles.circle}>
-          <Ionicons name={'card'} size={20} color={Colors.dark} />
-        </View>
+        
+
+        <Link href={'/(authenticated)/(modals)/card'} asChild>
+          <TouchableOpacity >
+            <View style={styles.circle}>
+              <Ionicons name={'card'} size={20} color={Colors.dark} />
+            </View>
+          </TouchableOpacity>
+        </Link>
+
+
       </View>
     </BlurView>
   );

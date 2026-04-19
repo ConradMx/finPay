@@ -40,7 +40,6 @@ header: () => <CustomHeader/>,
 headerTransparent: true,
       }}
       />
-
       <Tabs.Screen
       name="invest"
       options={{
@@ -79,10 +78,6 @@ tabBarIcon:({size, color}) => (
 )
       }}
       />
-
-
-
-
      
     </Tabs>
 

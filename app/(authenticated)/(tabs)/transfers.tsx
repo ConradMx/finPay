@@ -145,4 +145,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default transfers
+export default transfers;

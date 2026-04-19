@@ -1,67 +1,82 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native'
-import React, { useState } from 'react'
-import { defaultStyles } from '@/constants/Styles'
 import Colors from '@/constants/Colors'
-import { Link, useRouter } from 'expo-router'
-import { defineAnimation } from 'react-native-reanimated'
+import { defaultStyles } from '@/constants/Styles'
 import { useSignUp } from '@clerk/clerk-expo'
+import { Link, useRouter } from 'expo-router'
+import React, { useState } from 'react'
+import { Alert, KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 
 const signup = () => {
-  const [countryCode, setCountryCode] = useState('+1')
-  const [phoneNumber, setPhoneNumber] = useState('')
-  const keyboardVerticalOffset = Platform.OS === 'ios' ? 80 : 0;
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const router = useRouter()
   const { signUp } = useSignUp()
 
+  const validatePassword = (pwd: string) => {
+    // Minimum 8 characters
+    return pwd.length >= 8
+  }
+
   const onSignup = async () => {
-    const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+    // Validate password meets minimum requirements
+    if (!validatePassword(password)) {
+      Alert.alert('Invalid Password', 'Password must be at least 8 characters.')
+      return
+    }
 
     try {
-      await signUp!.create({
-        phoneNumber: fullPhoneNumber,
-      });
-      signUp!.preparePhoneNumberVerification();
+      const signUpAny = signUp as any
+      await signUpAny.create({
+        emailAddress: email.trim(),
+        password,
+      })
+      await signUpAny.prepareEmailAddressVerification()
 
-      router.push({ pathname: '/verify/[phone]', params: { phone: fullPhoneNumber } });
-    } catch (error) {
-      console.error('Error signing up:', error);
+      router.push({ pathname: '/verify/[identifier]', params: { identifier: email.trim(), signup: 'true' } })
+    } catch (error: any) {
+      console.error('Error signing up:', error)
+      Alert.alert('Sign up failed', error?.message || 'Please make sure your email and password are valid.')
     }
   }
+
+  const isFormValid = email.trim() !== '' && password !== ''
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior='padding' keyboardVerticalOffset={73}>
       <View style={defaultStyles.container}>
         <Text style={defaultStyles.header}>Let's get started!</Text>
-        <Text style={defaultStyles.descriptionText}>Enter your phone number. we will send you a confirmation code there</Text>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Country code"
-            placeholderTextColor={Colors.gray}
-            value={countryCode}
-          />
+        <Text style={defaultStyles.descriptionText}>Enter your email and password. We'll send a verification code to your email.</Text>
 
-          <TextInput
-            style={[styles.input, { flex: 1 }]}
-            placeholder="Mobile number"
-            keyboardType="numeric"
-            placeholderTextColor={Colors.gray}
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor={Colors.gray}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+        />
 
-          />
-        </View>
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor={Colors.gray}
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+
         <Link href={'/login'} replace asChild>
           <TouchableOpacity>
-            <Text style={defaultStyles.textLink}>Already have an account? Log in </Text>
+            <Text style={defaultStyles.textLink}>Already have an account? Log in</Text>
           </TouchableOpacity>
         </Link>
 
-
         <View style={{ flex: 1 }} />
-        <TouchableOpacity style={[defaultStyles.pillButton,
-        phoneNumber !== '' ? styles.enabled : styles.disabled,
-        { marginBottom: 20 },
-        ]} onPress={onSignup}>
+        <TouchableOpacity
+          style={[defaultStyles.pillButton, isFormValid ? styles.enabled : styles.disabled, { marginBottom: 20 }]}
+          onPress={onSignup}
+          disabled={!isFormValid}
+        >
           <Text style={defaultStyles.buttonText}>Sign up</Text>
         </TouchableOpacity>
       </View>
@@ -69,25 +84,19 @@ const signup = () => {
   )
 }
 
-
 const styles = StyleSheet.create({
-  inputContainer: {
-    marginVertical: 40,
-    flexDirection: "row",
-  },
   input: {
     backgroundColor: Colors.lightGray,
     padding: 20,
     borderRadius: 16,
     fontSize: 20,
-    marginRight: 10
+    marginBottom: 16,
   },
   enabled: {
-    backgroundColor: Colors.primary
+    backgroundColor: Colors.primary,
   },
   disabled: {
     backgroundColor: Colors.primaryMuted,
   },
-
 })
 export default signup

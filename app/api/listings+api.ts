@@ -272,7 +272,7 @@ const data = [
       "solana-ecosystem",
       "cms-holdings-portfolio",
       "kenetic-capital-portfolio",
-      "alameda-research-portfolio",
+      "alameda-re-portfolio",
       "multicoin-capital-portfolio",
       "okex-blockdream-ventures-portfolio",
       "layer-1",

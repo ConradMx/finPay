@@ -5,10 +5,10 @@ import { Link, useLocalSearchParams } from 'expo-router'
 import React, { Fragment, useEffect, useState } from 'react'
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import {
-  CodeField,
-  Cursor,
-  useBlurOnFulfill,
-  useClearByFocusCell,
+    CodeField,
+    Cursor,
+    useBlurOnFulfill,
+    useClearByFocusCell,
 } from 'react-native-confirmation-code-field'
 const CELL_COUNT = 6;
 
@@ -51,6 +51,14 @@ const page = () => {
         console.log('Sign-up verification result:', result)
         if (result.status === 'complete') {
           await setActive!({ session: result.createdSessionId })
+        } else if (result.status === 'missing_requirements') {
+          // If there are missing requirements, show user message with what's missing
+          const missingFields = result.missingFields || []
+          Alert.alert(
+            'Additional Information Required',
+            `Please provide: ${missingFields.join(', ')}`,
+            [{ text: 'OK' }]
+          )
         } else {
           Alert.alert('Error', 'Verification not complete. Please try again.')
         }
@@ -63,14 +71,12 @@ const page = () => {
     }
   }
 
-
-
   return (
     <View style={defaultStyles.container}>
       <Text style={defaultStyles.header}>Verification code</Text>
       <Text style={defaultStyles.descriptionText}>Code sent to {identifier}</Text>
-   
-   <CodeField
+
+      <CodeField
         ref={ref}
         value={code}
         onChangeText={setCode}
@@ -78,69 +84,60 @@ const page = () => {
         rootStyle={styles.codeFieldRoot}
         keyboardType="number-pad"
         textContentType="oneTimeCode"
-        renderCell={({index, symbol, isFocused}) => (
-
-
-        <Fragment key={index}>
-          <View
-            key={index}
-            style={[styles.cellRoot, isFocused ? styles.focusCell : null]}
-            onLayout={getCellOnLayoutHandler(index)}
-          >
-            <Text style={styles.cellText}>
-              {symbol || (isFocused ? <Cursor /> : null)}
-            </Text>
-          </View>
-          {index === 2 ? <View key={`separator-${index}`} style={styles.separator} /> : null}
-        </Fragment>
+        renderCell={({ index, symbol, isFocused }) => (
+          <Fragment key={index}>
+            <View
+              style={[styles.cellRoot, isFocused ? styles.focusCell : null]}
+              onLayout={getCellOnLayoutHandler(index)}
+            >
+              <Text style={styles.cellText}>
+                {symbol || (isFocused ? <Cursor /> : null)}
+              </Text>
+            </View>
+            {index === 2 ? <View key={`separator-${index}`} style={styles.separator} /> : null}
+          </Fragment>
         )}
       />
 
-
-     <Link href={'/login'} replace asChild>
-         <TouchableOpacity>
-           <Text style={defaultStyles.textLink}>Already have an account? Log in </Text>
-         </TouchableOpacity>
-         </Link>
-    </View> 
+      <Link href={'/login'} replace asChild>
+        <TouchableOpacity>
+          <Text style={defaultStyles.textLink}>Already have an account? Log in</Text>
+        </TouchableOpacity>
+      </Link>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-
-codeFieldRoot: {
-  marginVertical: 20,
-marginLeft:'auto',
-marginRight:'auto',
-gap:12,
-
-
-},
+  codeFieldRoot: {
+    marginVertical: 20,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    gap: 12,
+  },
   cellRoot: {
     width: 45,
     height: 60,
-justifyContent:'center',
-alignItems:'center',
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: Colors.lightGray,
     textAlign: 'center',
-    borderRadius:8,
+    borderRadius: 8,
   },
   focusCell: {
     borderColor: '#000',
   },
-separator:{
-height:2,
-width:10,
-backgroundColor: Colors.gray,
-alignSelf:'center',
-
-},
-
-cellText:{
-  color: '#000',
-  fontSize:36,
-  textAlign:'center'
-}
+  separator: {
+    height: 2,
+    width: 10,
+    backgroundColor: Colors.gray,
+    alignSelf: 'center',
+  },
+  cellText: {
+    color: '#000',
+    fontSize: 36,
+    textAlign: 'center',
+  },
 })
- 
+
 export default page
